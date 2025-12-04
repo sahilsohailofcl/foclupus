@@ -1,0 +1,29 @@
+{
+  "name": "@foclupus/ui",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.ts",
+  "module": "index.ts",
+  "scripts": {
+    "dev": "echo 'No development needed for ui package'",
+    "build": "echo 'No build step needed for ui package'"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-dom": "*",
+    "tailwindcss-react-native": "^1.7.10"
+  },
+  "dependencies": {
+    "react-native": "0.74.3",
+    "react-native-web": "0.19.12",
+    "lucide-react-native": "^0.395.0",
+    "lucide-react": "^0.395.0",
+    "react-native-svg": "15.3.0"
+  },
+ 
+  "devDependencies": {
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "typescript": "^5.3.3"
+  }
+}

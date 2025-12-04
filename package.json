@@ -1,0 +1,37 @@
+{
+  "name": "foclupus-next-native",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter next-web dev",
+    "start:mobile": "pnpm --filter expo-mobile start"
+  },
+  "dependencies": {
+    "@foclupus/api-client": "workspace:*",
+    "@foclupus/ui": "workspace:*",
+    "@foclupus/utils": "workspace:*",
+    "react": "19.2.1",
+    "react-dom": "19.2.1",
+    "recharts": "^3.5.1",
+    "tailwindcss": "^3.4.4",
+    "tailwindcss-react-native": "^1.7.10",
+    "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.2"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "ignoreMissing": [
+        "react",
+        "react-dom",
+        "react-native",
+        "react-native-web"
+      ]
+    }
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
