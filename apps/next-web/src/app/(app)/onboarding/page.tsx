@@ -1,6 +1,6 @@
 'use client'; 
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Flame, Target, Brain, Sparkles, TrendingUp, ChevronRight, Home } from 'lucide-react';
 
@@ -54,22 +54,6 @@ const Input: React.FC<InputProps> = ({ value, onChange, placeholder = '', classN
 );
 
 /**
- * Mock Hook: useRouter replacement
- * Simulates navigation by changing the local app status.
- */
-const useMockRouter = (setAppStatus: React.Dispatch<React.SetStateAction<string>>) => ({
-  push: (url: string) => {
-    console.log(`Simulating navigation to: ${url}`);
-    setAppStatus('home'); // Change local state to show simulated home page
-  }
-});
-
-/**
- * Mock Function: createPageUrl replacement
- */
-const createPageUrl = (pageName: string) => `/app/${pageName.toLowerCase()}`;
-
-/**
  * Mock API Client Implementation
  * Simulates network latency and API calls.
  */
@@ -94,18 +78,13 @@ const apiClient = {
 // --- MAIN ONBOARDING COMPONENT ---
 
 export default function Onboarding() {
-  // State to track successful onboarding completion (used instead of router)
+  // All state hooks must be defined unconditionally at the top level
+  // Statuses: 'onboarding' (default), 'complete' (success screen), 'navigated' (simulated exit)
   const [appStatus, setAppStatus] = useState('onboarding'); 
-
-  // Initialize mock router (HOOK 1: MUST BE CALLED UNCONDITIONALLY)
-  const router = useMockRouter(setAppStatus); 
-  
-  // All state hooks must be defined before any conditional return
-  const [step, setStep] = useState(1); // HOOK 2
-  const [wolfName, setWolfName] = useState(''); // HOOK 3
-  const [selectedGoal, setSelectedGoal] = useState(''); // HOOK 4
-  const [isLoading, setIsLoading] = useState(false); // HOOK 5
-
+  const [step, setStep] = useState(1); 
+  const [wolfName, setWolfName] = useState(''); 
+  const [selectedGoal, setSelectedGoal] = useState(''); 
+  const [isLoading, setIsLoading] = useState(false); 
 
   const goals = [
     {
@@ -121,7 +100,6 @@ export default function Onboarding() {
       description: 'Train your mind to concentrate longer',
     },
     {
-      // FIX 1: Removed the duplicate 'id' property here.
       id: 'dopamine_detox', 
       title: 'Dopamine Detox',
       icon: Sparkles,
@@ -141,10 +119,10 @@ export default function Onboarding() {
     },
   ];
 
+
   const handleComplete = async () => {
     setIsLoading(true);
     try {
-      // Simulate API calls for authentication and profile creation
       await apiClient.auth.me(); 
       
       const profileData = {
@@ -164,7 +142,7 @@ export default function Onboarding() {
 
       await apiClient.entities.UserProfile.create(profileData); 
       
-      // Show completion popup first
+      // Show completion status
       setAppStatus('complete');
 
     } catch (error) {
@@ -175,64 +153,37 @@ export default function Onboarding() {
     }
   };
 
-  /**
-   * Handler: Immediately redirects (simulated) to the Home page.
-   */
-  const handleGoToHome = () => {
-    router.push(createPageUrl('Home'));
-  };
 
-  // When appStatus becomes 'complete', redirect to the Home page after 1.5s
-  // This useEffect is kept but doesn't run router.push immediately anymore, 
-  // relying on the button click instead, but can be used for cleanup/tracking.
-  useEffect(() => { // HOOK 6
-    if (appStatus !== 'complete') return;
-  }, [appStatus]);
-
-  // FIX 2: Conditional rendering moved AFTER all hooks to comply with Rules of Hooks.
+  // If navigation has successfully occurred, return null (simulates exiting the component)
+  if (appStatus === 'navigated') {
+    return null;
+  }
   
   // Renders the success page after onboarding is complete
   if (appStatus === 'complete') { 
     return (
       <div className="min-h-screen bg-[#fdfcf2] flex items-center justify-center p-4">
-        <div className="text-center p-8 bg-white rounded-3xl shadow-xl border border-green-200">
-          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-500/10 flex items-center justify-center shadow-lg">
+        <div className="text-center p-8 bg-white rounded-3xl shadow-xl border border-green-200 w-full max-w-sm">
+          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-500/10 flex items-center justify-center shadow-lg animate-pulse">
             <Sparkles className="w-10 h-10 text-green-600" />
           </div>
           <h2 className="text-3xl font-bold text-green-700">Journey Started!</h2>
           <p className="text-gray-600 mt-2 mb-6">Welcome, **{wolfName || 'Young Wolf'}**! Your profile is ready.</p>
           
-          <Button
-            onClick={handleGoToHome}
-            className="w-full h-12 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-lg shadow-md"
-          >
-            <Home className="w-5 h-5 mr-2" />
-            Go to Home
-          </Button>
+          <a href="/home" className="block w-full">
+            <Button
+              className="w-full h-12 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-lg shadow-md"
+            >
+              <Home className="w-5 h-5 mr-2" />
+              Go to Home Dashboard
+            </Button>
+          </a>
 
-          <p className="text-sm mt-4 text-gray-500">Click above to start your journey.</p>
+          <p className="text-sm mt-4 text-gray-500">You are ready to begin your focused journey.</p>
         </div>
       </div>
     );
   } 
-  
-  // Renders the simulated home page after navigation is complete
-  if (appStatus === 'home') { 
-     return (
-       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-         <div className="text-center p-12 bg-indigo-50 rounded-3xl shadow-2xl border-4 border-indigo-300">
-           <Home className="w-12 h-12 mx-auto text-indigo-600 mb-4" />
-           <h2 className="text-4xl font-extrabold text-indigo-800">Welcome Home, Wolf!</h2>
-           <p className="text-xl text-indigo-600 mt-2">
-             You have successfully navigated to your dashboard.
-           </p>
-           <p className="text-sm text-gray-500 mt-6">
-             (This simulates rendering the target page component.)
-           </p>
-         </div>
-       </div>
-     );
-  }
 
   // Renders the main onboarding flow steps
   return (
