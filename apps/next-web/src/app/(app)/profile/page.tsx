@@ -1,308 +1,393 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import Link from 'next/link';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell
+} from 'recharts';
+import {
+  Trophy,
+  Flame,
+  Zap,
+  Edit2,
+  Save,
+  X,
+  Activity,
+  Calendar,
+  Mail,
+  Target,
+  Crown,
+  LogOut,
+  Clock,
+  ArrowRight,
+  User,
+  ChevronRight
+} from 'lucide-react';
 
-// --- Foclupus Imports (Consolidated) ---
-import { apiClient } from '@foclupus/utils/apiClient';
-import { UserProfile } from '@foclupus/utils/types';
-import { SectionHeader, WolfRankBadge, Card as WolfCard, WolfButton } from '@foclupus/ui'; // Renamed Card to WolfCard to avoid conflict
-import { createPageUrl } from '@foclupus/utils';
+/* --------------------------------------------------
+   Types
+   -------------------------------------------------- */
+interface UserProfile {
+  id: string;
+  username: string;
+  email: string;
+  points: number;
+  bio: string;
+  joinedDate: string;
+  currentStreak: number;
+  longestStreak: number;
+  focusHours: number;
+  coreFocus: string;
+  isPro: boolean;
+}
 
-// --- Shadcn/UI Imports (Assuming standard setup) ---
-// NOTE: I've replaced the simple `Card` mock with the explicit imports you used in the second block.
+interface ChartDataPoint {
+  day: string;
+  minutes: number;
+}
 
-// Define a fallback User type if not exported
-type User = { email: string };
-// Extend UserProfile locally to include missing fields
-type ExtendedUserProfile = UserProfile & {
-  focus_goal?: string;
-  total_focus_minutes?: number;
-  wolf_rank?: string;
-  level?: number;
-  wolf_name?: string;
-  current_streak?: number;
-  longest_streak?: number;
-  xp?: number;
-  is_premium?: boolean;
+interface BadgeProps {
+  points: number;
+}
+
+/* --------------------------------------------------
+   Mock Data & Utilities
+   -------------------------------------------------- */
+const INITIAL_PROFILE: UserProfile = {
+  id: 'user_123',
+  username: 'AlphaWolf_99',
+  email: 'hunter@foclupus.com',
+  points: 1250,
+  bio: 'Chasing goals and leading the pack. Focused on deep work and consistent habits.',
+  joinedDate: 'Dec 2025',
+  currentStreak: 5,
+  longestStreak: 10,
+  focusHours: 0,
+  coreFocus: '',
+  isPro: false
 };
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
-// --- Icon Imports ---
-import { Settings, LogOut, Crown, Zap, Edit2, Check, X, Sparkles, TrendingUp, Flame } from 'lucide-react';
-
-export default function ProfilePage() {
-    const queryClient = useQueryClient();
-    const [isEditing, setIsEditing] = useState(false);
-    const [editedName, setEditedName] = useState('');
-
-    // 1. Fetch User (for email) and Profile (for stats/name)
-    const { data: user, isLoading: isUserLoading } = useQuery<User>({
-        queryKey: ['currentUser'],
-        queryFn: () => apiClient.auth.me(),
+const generateMockSessions = (): ChartDataPoint[] => {
+  const sessions: ChartDataPoint[] = [];
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    sessions.push({
+      day: d.toLocaleDateString('en-US', { weekday: 'short' }),
+      minutes: Math.floor(Math.random() * 120) + 20
     });
+  }
+  return sessions;
+};
 
-    const { data: profiles = [], isLoading: isProfileLoading } = useQuery<ExtendedUserProfile[]>({
-        queryKey: ['userProfile'],
-        queryFn: () => apiClient.entities.UserProfile.list('-created_date', 1),
-    });
+/* --------------------------------------------------
+   Reusable Motion Card
+   -------------------------------------------------- */
+const MotionCard: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+  onClick?: () => void;
+}> = ({ children, className = '', delay = 0, onClick }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.42, delay, type: 'spring', stiffness: 120 }}
+    whileHover={{ y: -6, boxShadow: '0 12px 30px rgba(15, 23, 42, 0.08)' }}
+    onClick={onClick}
+    className={`bg-white rounded-2xl border border-orange-100 shadow-sm overflow-hidden ${className}`}
+  >
+    {children}
+  </motion.div>
+);
 
-    const userProfile = profiles[0];
+/* --------------------------------------------------
+   Rank Badge
+   -------------------------------------------------- */
+const RankBadge: React.FC<BadgeProps> = ({ points }) => {
+  const { className, label: text, Icon } = useMemo(() => {
+    if (points >= 1000) return { className: 'bg-gradient-to-r from-yellow-400 to-orange-500', label: 'Alpha', Icon: Trophy };
+    if (points >= 500) return { className: 'bg-gradient-to-r from-blue-400 to-indigo-500', label: 'Beta', Icon: Zap };
+    return { className: 'bg-gray-400', label: 'Pup', Icon: User };
+  }, [points]);
 
-    // 2. Name Update Mutation - MUST be called before early returns
-    const updateNameMutation = useMutation({
-        mutationFn: (newName: string) => apiClient.entities.UserProfile.update(userProfile?.id || '', { wolf_name: newName }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['userProfile'] });
-            setIsEditing(false);
-        },
-    });
+  return (
+    <span className={`inline-flex items-center px-3 py-1 text-sm font-bold text-white rounded-full shadow-md ${className}`}>
+      {/* Icon is a dynamic component */}
+      {/* @ts-ignore */}
+      <Icon className="w-4 h-4 mr-2" />
+      {text}
+    </span>
+  );
+};
 
-    // 3. Helper to map goal to a readable string - MUST be called before early returns
-    const focusGoalDisplay = useMemo(() => {
-        switch (userProfile?.focus_goal) {
-            case 'reduce_screen_time': return { name: 'Reduce Screen Time', icon: TrendingUp };
-            case 'build_focus': return { name: 'Build Deep Focus', icon: Flame };
-            case 'dopamine_detox': return { name: 'Dopamine Detox', icon: Sparkles };
-            case 'mindful_living': return { name: 'Mindful Living', icon: Crown };
-            case 'all_of_above': return { name: 'Complete Transformation', icon: Zap };
-            default: return { name: 'Focus Goal Undefined', icon: Sparkles };
-        }
-    }, [userProfile?.focus_goal]);
+/* --------------------------------------------------
+   Main Component
+   -------------------------------------------------- */
+export default function ProfilePage(): JSX.Element {
+  const [profile, setProfile] = useState<UserProfile>(INITIAL_PROFILE);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<Partial<UserProfile>>({ ...INITIAL_PROFILE });
 
-    // Handle loading and missing profile
-    const isLoading = isUserLoading || isProfileLoading;
+  // Keep a stable chart data for the session
+  const chartData = useMemo(() => generateMockSessions(), []);
 
-    if (isLoading) {
-        return <div className="text-center py-10 text-wolf-brown-light">Loading profile details...</div>;
-    }
+  useEffect(() => {
+    // Sync edit form whenever the profile changes
+    setEditData({ ...profile });
+  }, [profile]);
 
-    if (!userProfile || !user) {
-        return <div className="text-center py-10 text-red-600">No user or profile data found.</div>;
-    }
+  const level = Math.floor(profile.points / 100) + 1;
 
-    // Handlers (safe to call after early returns since they use hooks set up above)
-    const handleStartEdit = () => {
-        setEditedName(userProfile.wolf_name || '');
-        setIsEditing(true);
-    };
+  const handleSave = () => {
+    // Merge trimmed values and keep previous values as fallback
+    setProfile((prev) => ({
+      ...prev,
+      username: (editData.username ?? prev.username).trim(),
+      bio: (editData.bio ?? prev.bio).trim(),
+      coreFocus: (editData.coreFocus ?? prev.coreFocus).trim()
+    }));
+    setIsEditing(false);
+  };
 
-    const handleSaveName = () => {
-        if (editedName.trim() && editedName !== userProfile.wolf_name) {
-            updateNameMutation.mutate(editedName);
-        } else {
-            setIsEditing(false); // Close if no change
-        }
-    };
+  const handleCancel = () => {
+    setEditData({ ...profile });
+    setIsEditing(false);
+  };
 
-    const handleLogout = () => {
-        apiClient.auth.logout();
-        apiClient.auth.redirectToLogin(); // Use the standard redirect
-    };
+  const handleLogout = () => {
+    // Hook up your auth logout here
+    console.log('Logging out...');
+  };
 
-    const motionVariants = {
-        initial: { opacity: 0, y: 20 },
-        animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
-        hover: { scale: 1.02, transition: { type: "spring", stiffness: 300 } }
-    };
-
-    return (
-        <motion.div 
-            initial="initial"
-            animate="animate"
-            variants={{
-                initial: { opacity: 0 },
-                animate: { opacity: 1, transition: { staggerChildren: 0.1 } }
-            }}
-            className="max-w-4xl mx-auto p-4 space-y-8"
-        >
-            {/* Header and Settings Button */}
-            <motion.div variants={motionVariants} className="flex justify-between items-center">
-                <SectionHeader title={`My Wolf Den`} />
-                <Link href={createPageUrl('Settings')} passHref>
-                    <WolfButton variant="secondary" size="icon" className="shadow-md hover:shadow-lg">
-                        <Settings className="w-5 h-5 text-wolf-brown-dark" />
-                    </WolfButton>
-                </Link>
-            </motion.div>
-
-            {/* Main Profile Card (Name Edit, Rank, XP) */}
-            <motion.div variants={motionVariants}>
-                <Card className="border-2 border-[#e8d5c4] bg-gradient-to-br from-orange-50 to-red-50 shadow-xl">
-                    <CardContent className="p-6">
-                        <div className="flex items-start gap-6">
-                            {/* Wolf Avatar Placeholder */}
-                            <div className="w-24 h-24 rounded-full wolf-gradient flex items-center justify-center text-white text-4xl font-bold shadow-2xl ring-4 ring-wolf-gold/50">
-                                {userProfile.wolf_name?.charAt(0).toUpperCase() || 'W'}
-                            </div>
-                            
-                            <div className="flex-1">
-                                {/* Name Display / Edit */}
-                                {!isEditing ? (
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <h1 className="text-3xl font-extrabold wolf-text-gradient">
-                                            {userProfile.wolf_name}
-                                        </h1>
-                                        <Button
-                                            onClick={handleStartEdit}
-                                            size="icon"
-                                            variant="ghost"
-                                            className="w-8 h-8 text-[#8b7355] hover:text-[#b22d15] transition-colors"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Input
-                                            value={editedName}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditedName(e.target.value)}
-                                            className="h-10 text-lg font-bold border-2 border-[#b22d15] rounded-xl focus:ring-2 focus:ring-[#de8538]"
-                                        />
-                                        <Button
-                                            onClick={handleSaveName}
-                                            size="icon"
-                                            className="w-10 h-10 bg-green-600 hover:bg-green-700 shadow-md"
-                                            disabled={updateNameMutation.isPending}
-                                        >
-                                            <Check className="w-5 h-5" />
-                                        </Button>
-                                        <Button
-                                            onClick={() => setIsEditing(false)}
-                                            size="icon"
-                                            variant="outline"
-                                            className="w-10 h-10 border-red-300 text-red-600 hover:bg-red-50"
-                                        >
-                                            <X className="w-5 h-5" />
-                                        </Button>
-                                    </div>
-                                )}
-                                
-                                <p className="text-sm text-[#8b7355] mb-4 font-mono">{user.email}</p>
-                                
-                                <div className="flex items-center gap-4 border-t pt-4 border-[#e8d5c4]">
-                                    <WolfRankBadge 
-                                        rank={userProfile.wolf_rank}
-                                    />
-                                    <div className="pl-4 border-l border-[#e8d5c4]">
-                                        <div className="text-xl font-bold text-wolf-red">
-                                            Level {userProfile.level}
-                                        </div>
-                                        <div className="text-sm text-[#8b7355] font-semibold">{userProfile.xp} XP Total</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </motion.div>
-
-            {/* Key Stats Grid */}
-            <div className="grid grid-cols-3 gap-4">
-                <motion.div variants={motionVariants} whileHover="hover">
-                    <WolfCard className="p-4 text-center bg-gray-50 border-gray-200 shadow-sm">
-                        <p className="text-2xl font-extrabold text-wolf-red">{userProfile.current_streak}</p>
-                        <p className="text-sm text-wolf-brown-light">Current Streak</p>
-                    </WolfCard>
-                </motion.div>
-                <motion.div variants={motionVariants} whileHover="hover">
-                    <WolfCard className="p-4 text-center bg-gray-50 border-gray-200 shadow-sm">
-                        <p className="text-2xl font-extrabold text-wolf-brown-dark">{userProfile.longest_streak}</p>
-                        <p className="text-sm text-wolf-brown-light">Longest Streak</p>
-                    </WolfCard>
-                </motion.div>
-                <motion.div variants={motionVariants} whileHover="hover">
-                    <WolfCard className="p-4 text-center bg-gray-50 border-gray-200 shadow-sm">
-                        <p className="text-2xl font-extrabold text-green-600">{Math.round((userProfile?.total_focus_minutes ?? 0) / 60)}h</p>
-                        <p className="text-sm text-wolf-brown-light">Focus Time (Hrs)</p>
-                    </WolfCard>
-                </motion.div>
+  return (
+    <div className="min-h-screen bg-[#FDFCF6] text-slate-800 font-sans p-4 sm:p-8">
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-orange-100">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+              {profile.username.charAt(0).toUpperCase()}
             </div>
 
+            <div>
+              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{profile.username}</h1>
+              <div className="flex items-center gap-3 mt-1">
+                <RankBadge points={profile.points} />
+                <span className="text-sm text-slate-500 font-medium">Level {level}</span>
+              </div>
+            </div>
+          </div>
 
-            {/* Focus Goal Card */}
-            <motion.div variants={motionVariants}>
-                <Card className="border-2 border-[#e8d5c4] shadow-md">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-3 text-xl wolf-text-gradient font-bold">
-                            <focusGoalDisplay.icon className="w-6 h-6 text-wolf-red" />
-                            My Core Focus
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100 shadow-inner">
-                            <p className="text-lg font-semibold text-[#2d1810]">
-                                {focusGoalDisplay.name}
-                            </p>
-                            <p className="text-sm text-[#8b7355] mt-1">
-                                This is the mission guiding your journey. Keep up the hunt!
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
-            </motion.div>
+          {!isEditing && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsEditing(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl shadow-sm hover:border-orange-300 transition-colors"
+            >
+              <Edit2 className="w-4 h-4" /> Edit Profile
+            </motion.button>
+          )}
+        </header>
 
-            {/* Subscription Status Card */}
-            <motion.div variants={motionVariants}>
-                <Card className="border-2 border-[#e8d5c4] shadow-md">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-3 text-xl text-[#de8538] font-bold">
-                            <Crown className="w-6 h-6 fill-[#de8538]/50" />
-                            Subscription Status
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {userProfile.is_premium ? (
-                            <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-4 border-2 border-amber-300 shadow-lg">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Zap className="w-6 h-6 text-amber-600 fill-amber-300" />
-                                    <span className="font-extrabold text-xl text-[#2d1810]">Alpha Pack Member</span>
-                                </div>
-                                <p className="text-sm text-[#8b7355]">
-                                    You have unlimited access to all features, insights, and lessons.
-                                </p>
-                            </div>
-                        ) : (
-                            <div className='space-y-4'>
-                                <p className="text-[#8b7355]">
-                                    Upgrade to Alpha Pack for unlimited sessions, advanced insights, and exclusive content.
-                                </p>
-                                <Button
-                                    onClick={() => window.location.href = createPageUrl('Subscription')}
-                                    className="w-full h-12 wolf-gradient hover:opacity-90 text-white rounded-xl font-semibold shadow-lg transition-all"
-                                >
-                                    <Crown className="w-5 h-5 mr-2" />
-                                    Upgrade to Alpha Pack
-                                </Button>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </motion.div>
+        {/* Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <MotionCard delay={0.08} className="p-5 border-l-4 border-l-red-500">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-red-50 rounded-lg text-red-500">
+                <Flame className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-bold text-slate-500 uppercase tracking-wide">Current Streak</span>
+            </div>
 
-            {/* Logout Button (Isolated and clearly styled) */}
-            <motion.div variants={motionVariants}>
-                <Button
-                    onClick={handleLogout}
-                    variant="outline"
-                    className="w-full h-12 border-2 border-red-300 text-red-600 hover:bg-red-50 rounded-xl font-semibold shadow-md transition-shadow"
-                >
-                    <LogOut className="w-5 h-5 mr-2" />
-                    Logout of Foclupus
-                </Button>
-            </motion.div>
+            <div className="text-3xl font-extrabold text-slate-900">{profile.currentStreak}</div>
+          </MotionCard>
 
-            {/* Footer */}
-            <motion.div variants={motionVariants} className="text-center text-sm text-[#8b7355] pt-4">
-                <p>Foclupus v1.0 • The Focused Wolf</p>
-                <p className="mt-1">Turn screen time into growth time 🐺</p>
-            </motion.div>
+          <MotionCard delay={0.16} className="p-5 border-l-4 border-l-yellow-500">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-yellow-50 rounded-lg text-yellow-600">
+                <Trophy className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-bold text-slate-500 uppercase tracking-wide">Longest Streak</span>
+            </div>
 
-            {/* Move these styles to a global CSS file like globals.css for proper usage. */}
-        </motion.div>
-    );
+            <div className="text-3xl font-extrabold text-slate-900">{profile.longestStreak}</div>
+          </MotionCard>
+
+          <MotionCard delay={0.24} className="p-5 border-l-4 border-l-blue-500">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-blue-50 rounded-lg text-blue-500">
+                <Clock className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-bold text-slate-500 uppercase tracking-wide">Focus Time (Hrs)</span>
+            </div>
+
+            <div className="text-3xl font-extrabold text-slate-900">{profile.focusHours}h</div>
+          </MotionCard>
+        </div>
+
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: Chart + Core Focus */}
+          <div className="lg:col-span-2 space-y-6">
+            <MotionCard delay={0.36} className="p-6">
+              <div className="text-orange-500 flex justify-end mb-2 text-sm font-bold">
+                <a href="/progress" className="inline-flex items-center gap-1">
+                  View All
+                  <ChevronRight className="w-4 h-4" />
+                </a>
+              </div>
+
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-orange-500" /> Focus Activity
+                </h3>
+                <span className="text-xs font-semibold bg-orange-100 text-orange-700 px-2 py-1 rounded-md">Last 7 Days</span>
+              </div>
+
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                    <Tooltip cursor={{ fill: '#fff7ed' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                    <Bar dataKey="minutes" radius={[6, 6, 0, 0]}>
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.minutes > 60 ? '#f97316' : '#fdba74'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </MotionCard>
+
+            <MotionCard delay={0.44} className="p-6 bg-gradient-to-br from-slate-50 to-white">
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="w-5 h-5 text-orange-600" />
+                <h3 className="text-lg font-bold text-slate-800">My Core Focus</h3>
+              </div>
+
+              {isEditing ? (
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">YOUR MISSION</label>
+                  <input
+                    aria-label="core-focus"
+                    type="text"
+                    className="w-full p-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-orange-500"
+                    value={editData.coreFocus ?? ''}
+                    onChange={(e) => setEditData({ ...editData, coreFocus: e.target.value })}
+                    placeholder="What is your main goal? (e.g., Master React)"
+                  />
+                </div>
+              ) : (
+                <div>
+                  {profile.coreFocus ? (
+                    <p className="text-xl font-medium text-slate-900">"{profile.coreFocus}"</p>
+                  ) : (
+                    <div className="p-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 text-center">
+                      <p className="text-slate-500 font-medium">Focus Goal Undefined</p>
+                      <p className="text-xs text-slate-400 mt-1">This is the mission guiding your journey. Keep up the hunt!</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </MotionCard>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-6 flex flex-col h-full">
+            <MotionCard delay={0.52} className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-slate-800">About Me</h2>
+
+                {isEditing && (
+                  <div className="flex gap-2">
+                    <button onClick={handleCancel} className="p-1 text-slate-400 hover:text-slate-600" aria-label="cancel-edit">
+                      <X size={20} />
+                    </button>
+                    <button onClick={handleSave} className="p-1 text-green-500 hover:text-green-600" aria-label="save-edit">
+                      <Save size={20} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">BIO</label>
+                    <textarea
+                      rows={4}
+                      value={editData.bio ?? ''}
+                      onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
+                      className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none resize-none"
+                    />
+                  </div>
+                  <button onClick={handleSave} className="w-full py-2 bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-600 transition-colors">
+                    Save Changes
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <p className="text-slate-600 leading-relaxed italic text-sm">"{profile.bio}"</p>
+                  <div className="space-y-3 pt-2 border-t border-slate-100">
+                    <div className="flex items-center gap-3 text-slate-600">
+                      <Calendar className="w-4 h-4 text-slate-400" />
+                      <span className="text-xs font-medium">Joined {profile.joinedDate}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-slate-600">
+                      <Mail className="w-4 h-4 text-slate-400" />
+                      <span className="text-xs font-medium">{profile.email}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </MotionCard>
+
+            <MotionCard delay={0.6} className="p-6 bg-gradient-to-br from-slate-900 to-slate-800 text-white border-none">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <Crown className="w-5 h-5 text-yellow-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">Subscription Status</h3>
+                  <p className="text-xs text-slate-300">Free Pack</p>
+                </div>
+              </div>
+
+              <p className="text-sm text-slate-300 mb-6 leading-relaxed">Upgrade to Alpha Pack for unlimited sessions, advanced insights, and exclusive content.</p>
+
+              <a href="/subscription">
+                <button className="w-full py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-slate-900 font-bold rounded-xl shadow-lg hover:shadow-yellow-500/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2">
+                  Upgrade to Alpha Pack <ArrowRight size={16} />
+                </button>
+              </a>
+            </MotionCard>
+
+            <div className="mt-auto pt-4">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleLogout}
+                className="w-full py-3 border-2 border-red-100 text-red-600 font-bold rounded-xl hover:bg-red-50 hover:border-red-200 transition-all flex items-center justify-center gap-2"
+              >
+                <LogOut size={18} />
+                Logout of Foclupus
+              </motion.button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
