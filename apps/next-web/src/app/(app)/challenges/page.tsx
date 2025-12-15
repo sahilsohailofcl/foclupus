@@ -30,7 +30,7 @@ const INITIAL_MOCK_CHALLENGES: Challenge[] = [
 ];
 
 // --- MOCK UI Components (Placeholders) ---
-const SectionHeader = ({ title, icon: Icon }: { title: string, icon: React.FC<any> }) => (
+const SectionHeader = ({ title, icon: Icon }: { title: string, icon: React.ElementType }) => (
   <header className="text-center space-y-2">
     <Icon className="w-10 h-10 text-wolf-gold mx-auto fill-wolf-gold/10" />
     <h1 className="text-3xl font-extrabold text-wolf-brown-dark">{title}</h1>
