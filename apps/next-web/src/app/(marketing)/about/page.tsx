@@ -2,9 +2,9 @@
 
 import { motion } from "framer-motion";
 import { Flame, Heart, Target, Users, Zap, Shield } from "lucide-react";
-import Header from "../components/landing/Header";
-import Footer from "../components/landing/Footer";
-import ScrollToTop from "../components/landing/ScrollToTop";
+import Header from "../../components/landing/Header";
+import Footer from "../../components/landing/Footer";
+import ScrollToTop from "../../components/landing/ScrollToTop";
 
 const values = [
   {

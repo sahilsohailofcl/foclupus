@@ -1,6 +1,5 @@
 import './globals.css'; // Your global styles
 import type { Metadata } from 'next';
-import { MainLayout } from './components/MainLayout'; // Import your new layout component
 import { Providers } from './components/providers/Providers';
 
 export const metadata: Metadata = {
@@ -15,13 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      {/* We apply the client providers here */}
       <body>
         <Providers>
-          {/* MainLayout wraps all your content */}
-          <MainLayout>
-            {children}
-          </MainLayout>
+          {children}
         </Providers>
       </body>
     </html>

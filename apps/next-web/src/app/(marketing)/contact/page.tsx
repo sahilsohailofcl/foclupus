@@ -2,12 +2,12 @@
 
 import { motion } from "framer-motion";
 import { Mail, MessageSquare, MapPin, Send } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Textarea } from "../components/ui/textarea";
-import Header from "../components/landing/Header";
-import Footer from "../components/landing/Footer";
-import ScrollToTop from "../components/landing/ScrollToTop";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
+import Header from "../../components/landing/Header";
+import Footer from "../../components/landing/Footer";
+import ScrollToTop from "../../components/landing/ScrollToTop";
 import { useState } from "react";
 
 type ContactFormData = {

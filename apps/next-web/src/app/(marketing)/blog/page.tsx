@@ -2,10 +2,10 @@
 
 import { motion } from "framer-motion";
 import { Calendar, Clock, ArrowRight, Tag } from "lucide-react";
-import { Button } from "../components/ui/button";
-import Header from "../components/landing/Header";
-import Footer from "../components/landing/Footer";
-import ScrollToTop from "../components/landing/ScrollToTop";
+import { Button } from "../../components/ui/button";
+import Header from "../../components/landing/Header";
+import Footer from "../../components/landing/Footer";
+import ScrollToTop from "../../components/landing/ScrollToTop";
 
 const posts = [
   {

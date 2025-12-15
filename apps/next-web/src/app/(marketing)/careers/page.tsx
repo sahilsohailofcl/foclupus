@@ -2,10 +2,10 @@
 
 import { motion } from "framer-motion";
 import { Briefcase, MapPin, Clock, ArrowRight, Heart, Zap, Users } from "lucide-react";
-import { Button } from "../components/ui/button";
-import Header from "../components/landing/Header";
-import Footer from "../components/landing/Footer";
-import ScrollToTop from "../components/landing/ScrollToTop";
+import { Button } from "../../components/ui/button";
+import Header from "../../components/landing/Header";
+import Footer from "../../components/landing/Footer";
+import ScrollToTop from "../../components/landing/ScrollToTop";
 
 const perks = [
   { icon: MapPin, title: "Remote First", description: "Work from anywhere in the world" },
