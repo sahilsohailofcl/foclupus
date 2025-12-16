@@ -2,7 +2,6 @@
 
 import './globals.css';
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import { Providers } from './components/providers/Providers';
 
 const GA_MEASUREMENT_ID = 'G-VRNS11LJX1';
@@ -20,21 +19,22 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Google Analytics gtag.js */}
-        <Script
+        {/* Google Analytics */}
+        <script
+          async
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-          strategy="afterInteractive"
         />
 
-        {/* Google Analytics config */}
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${GA_MEASUREMENT_ID}');
-          `}
-        </Script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${GA_MEASUREMENT_ID}');
+            `,
+          }}
+        />
       </head>
 
       <body>
