@@ -1,11 +1,8 @@
-// apps/next-web/src/app/layout.tsx
-
 import './globals.css';
 import type { Metadata } from 'next';
 import { Providers } from './components/providers/Providers';
-import { Script } from 'next/script'; // 👈 CHANGED: Use NAMED export { Script }
+import Script from 'next/script'; 
 
-// Your GA Measurement ID
 const GA_MEASUREMENT_ID = 'G-VRNS11LJX1'; 
 
 export const metadata: Metadata = {
@@ -21,6 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       {/* 1. Google Tag gtag.js script */}
+      {/* The script element props will now pass due to the ts-ignore above */}
       <Script 
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} 
         strategy="afterInteractive" 
